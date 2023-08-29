@@ -55,9 +55,9 @@
 //!```no_run
 //! //place this code before flapigen swig_expand function
 //! use rifgen::{Generator, TypeCases, Language};
-//! let source_folder = "/user/projects"; //use your projects folder
+//! let source_folders = vec!["/user/projects"]; //use your projects folder
 //! let out_file = "/user/projects/glue.in";
-//! Generator::new(TypeCases::CamelCase,Language::Java,source_folder)
+//! Generator::new(TypeCases::CamelCase,Language::Java,source_folders)
 //! .generate_interface(out_file)
 //! ```
 //!
