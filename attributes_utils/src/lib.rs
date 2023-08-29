@@ -1,6 +1,26 @@
 use itertools::MultiUnzip;
-use quote::format_ident;
-use syn::ItemImpl;
+use quote::{format_ident, quote};
+use syn::{ItemImpl, Type};
+
+pub fn map_fn_arg_type(ty: Type) -> Type {
+    match ty {
+        string_type if string_type == Type::Verbatim(quote!(String)) => {
+            Type::Verbatim(quote!(&str))
+        }
+        #[cfg_attr(test, deny(non_exhaustive_omitted_patterns))]
+        other_type => other_type,
+    }
+}
+
+pub fn map_fn_return_type(ty: Type) -> Type {
+    match ty {
+        string_type if string_type == Type::Verbatim(quote!(String)) => {
+            Type::Verbatim(quote!(&str))
+        }
+        #[cfg_attr(test, deny(non_exhaustive_omitted_patterns))]
+        other_type => other_type,
+    }
+}
 
 pub fn generate_impl_block(item: &syn::ItemStruct) -> ItemImpl {
     let name = item.clone().ident;
@@ -28,11 +48,16 @@ pub fn generate_impl_block(item: &syn::ItemStruct) -> ItemImpl {
                 }
             })
             .multiunzip();
+
+    let f_ty_args = f_ty.iter().cloned().map(map_fn_arg_type).collect::<Vec<_>>();
+    let f_ty_return = f_ty.iter().cloned().map(map_fn_return_type).collect::<Vec<_>>();
+
+
     let impl_block = quote::quote! {
          impl #name {
             #[generate_interface(constructor)]
             #vis fn new(
-                #(#f_ident: #f_ty),*
+                #(#f_ident: #f_ty_args),*
             ) -> #name {
                 #name {
                     #(#f_ident),*
@@ -40,12 +65,12 @@ pub fn generate_impl_block(item: &syn::ItemStruct) -> ItemImpl {
             }
             #(
                 #[generate_interface]
-                #f_vis fn #f_setter(&mut self, #f_ident: #f_ty) {
+                #f_vis fn #f_setter(&mut self, #f_ident: #f_ty_args) {
                     self.#f_ident = #f_ident;
                 }
 
                 #[generate_interface]
-                #f_vis fn #f_getter(&self) -> #f_ty {
+                #f_vis fn #f_getter(&self) -> #f_ty_return {
                     (&self.#f_ident).clone()
                 }
             )*
